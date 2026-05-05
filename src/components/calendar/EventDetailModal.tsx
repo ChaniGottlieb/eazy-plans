@@ -1,0 +1,207 @@
+"use client";
+
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import type { EventRow, EventStatus } from "@/types/database";
+import { formatDate, formatCurrency } from "@/lib/utils";
+
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  morning: "בוקר", evening: "ערב", full_day: "יום מלא", shabbat: "שבת",
+};
+const EVENT_PURPOSE_LABELS: Record<string, string> = {
+  wedding: "חתונה", bar_mitzvah: "בר מצווה", bat_mitzvah: "בת מצווה",
+  birthday: "יום הולדת", conference: "כנס / אירוע עסקי", other: "אחר",
+};
+const STATUS_LABELS: Record<EventStatus, string> = {
+  pending: "ממתין לאישור", approved: "אושר", rejected: "נדחה", cancelled: "בוטל",
+};
+const STATUS_VARIANTS: Record<EventStatus, "default" | "secondary" | "destructive" | "outline"> = {
+  pending: "outline", approved: "default", rejected: "destructive", cancelled: "secondary",
+};
+
+interface EventDetailModalProps {
+  event: EventRow;
+  open: boolean;
+  onClose: () => void;
+  canApprove: boolean;  // venue_owner only
+  isAdmin: boolean;
+}
+
+export function EventDetailModal({ event, open, onClose, canApprove, isAdmin }: EventDetailModalProps) {
+  const [loading, setLoading] = useState(false);
+
+  async function updateStatus(status: EventStatus) {
+    setLoading(true);
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from("events") as any)
+      .update({ status })
+      .eq("id", event.id);
+    setLoading(false);
+
+    if (error) {
+      toast.error("שגיאה בעדכון הסטטוס");
+      return;
+    }
+    toast.success(status === "approved" ? "האירוע אושר" : "האירוע נדחה");
+
+    // Send client confirmation email when approved (fire-and-forget)
+    if (status === "approved") {
+      fetch("/api/events/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId: event.id, type: "client_confirm" }),
+      }).catch(() => null);
+    }
+
+    onClose();
+  }
+
+  async function deleteEvent() {
+    setLoading(true);
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from("events") as any).delete().eq("id", event.id);
+    setLoading(false);
+
+    if (error) {
+      toast.error("שגיאה במחיקת האירוע");
+      return;
+    }
+    toast.success("האירוע נמחק");
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {formatDate(event.date)}
+            <Badge variant={STATUS_VARIANTS[event.status]}>
+              {STATUS_LABELS[event.status]}
+            </Badge>
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3 text-sm">
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">סוג אירוע</span>
+            <span className="font-medium">{EVENT_TYPE_LABELS[event.event_type]}</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">מהות</span>
+            <span className="font-medium">{EVENT_PURPOSE_LABELS[event.event_purpose]}</span>
+          </div>
+
+          <Separator />
+
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">לקוח</span>
+            <span className="font-medium">{event.client_name}</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">טלפון</span>
+            <span dir="ltr">{event.client_phone}</span>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">מייל</span>
+            <span dir="ltr">{event.client_email}</span>
+          </div>
+
+          <Separator />
+
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">מחיר מחירון</span>
+            <span>{formatCurrency(Number(event.price_listed))}</span>
+          </div>
+          {Number(event.discount_amount) > 0 && (
+            <div className="flex gap-2">
+              <span className="text-muted-foreground w-24 shrink-0">הנחה</span>
+              <span className="text-destructive">−{formatCurrency(Number(event.discount_amount))}</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24 shrink-0">מחיר סופי</span>
+            <span className="font-bold">{formatCurrency(Number(event.price_final))}</span>
+          </div>
+
+          {event.notes && (
+            <>
+              <Separator />
+              <div className="flex gap-2">
+                <span className="text-muted-foreground w-24 shrink-0">הערות</span>
+                <span>{event.notes}</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-2 pt-2">
+          {canApprove && event.status === "pending" && (
+            <>
+              <Button
+                size="sm"
+                onClick={() => updateStatus("approved")}
+                disabled={loading}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                אשר אירוע
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => updateStatus("rejected")}
+                disabled={loading}
+              >
+                דחה אירוע
+              </Button>
+            </>
+          )}
+
+          {(isAdmin || canApprove) && event.status !== "cancelled" && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => updateStatus("cancelled")}
+              disabled={loading}
+            >
+              בטל אירוע
+            </Button>
+          )}
+
+          {isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="text-destructive mr-auto" disabled={loading}>
+                  מחק
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>מחיקת אירוע</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    האירוע של {event.client_name} ב-{formatDate(event.date)} יימחק לצמיתות.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>ביטול</AlertDialogCancel>
+                  <AlertDialogAction onClick={deleteEvent} className="bg-destructive text-white hover:bg-destructive/90">
+                    מחק
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
