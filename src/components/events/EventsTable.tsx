@@ -104,10 +104,10 @@ export function EventsTable({ events: initialEvents, role }: EventsTableProps) {
           className="flex-1"
         />
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as EventStatus | "all")}>
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger dir="rtl" className="w-full sm:w-44">
             <SelectValue placeholder="כל הסטטוסים" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent dir="rtl">
             <SelectItem value="all">כל הסטטוסים</SelectItem>
             {(Object.entries(STATUS_LABELS) as [EventStatus, string][]).map(([v, l]) => (
               <SelectItem key={v} value={v}>{l}</SelectItem>

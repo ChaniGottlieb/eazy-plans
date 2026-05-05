@@ -110,8 +110,8 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
             <div className="space-y-1">
               <Label>סוג אירוע *</Label>
               <Select value={form.event_type} onValueChange={(v) => set("event_type", v)}>
-                <SelectTrigger><SelectValue placeholder="בחר סוג" /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger dir="rtl"><SelectValue placeholder="בחר סוג" /></SelectTrigger>
+                <SelectContent dir="rtl">
                   {(Object.entries(EVENT_TYPE_LABELS) as [EventType, string][]).map(([v, l]) => (
                     <SelectItem key={v} value={v}>{l}</SelectItem>
                   ))}
@@ -122,7 +122,7 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
               <Label>מהות האירוע *</Label>
               <Select value={form.event_purpose} onValueChange={(v) => set("event_purpose", v)}>
                 <SelectTrigger><SelectValue placeholder="בחר מהות" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent dir="rtl">
                   {(Object.entries(EVENT_PURPOSE_LABELS) as [EventPurpose, string][]).map(([v, l]) => (
                     <SelectItem key={v} value={v}>{l}</SelectItem>
                   ))}

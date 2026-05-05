@@ -130,10 +130,10 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
         <div className="flex items-center gap-3">
           <span className="text-sm text-muted-foreground">אולם:</span>
           <Select value={selectedVenueId} onValueChange={setSelectedVenueId}>
-            <SelectTrigger className="w-56">
+            <SelectTrigger dir="rtl" className="w-56">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dir="rtl">
               {venues.map((v) => (
                 <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
               ))}

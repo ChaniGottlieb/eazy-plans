@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { VenueForm } from "@/components/venues/VenueForm";
+import { VenueGallery } from "@/components/venues/VenueGallery";
 import type { VenueRow, UserRow } from "@/types/database";
 
 export default async function VenueDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -15,12 +16,13 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ id
   if (!venue) notFound();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold">{venue.name}</h1>
         <p className="text-sm text-muted-foreground mt-1">{venue.city}{venue.neighborhood ? ` · ${venue.neighborhood}` : ""}</p>
       </div>
       <VenueForm venue={venue} owners={owners ?? []} />
+      <VenueGallery venueId={venue.id} />
     </div>
   );
 }

@@ -143,10 +143,10 @@ export function VenueForm({ venue, owners }: VenueFormProps) {
           <div className="space-y-1">
             <Label>בעל האולם *</Label>
             <Select value={form.owner_user_id} onValueChange={(v) => set("owner_user_id", v)}>
-              <SelectTrigger>
+              <SelectTrigger dir="rtl">
                 <SelectValue placeholder="בחר בעל אולם" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent dir="rtl">
                 {owners.map((o) => (
                   <SelectItem key={o.id} value={o.id}>
                     {o.full_name} ({o.email})

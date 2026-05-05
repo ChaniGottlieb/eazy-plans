@@ -117,8 +117,8 @@ export function UsersManager({ users: initialUsers, currentUserId }: UsersManage
                 onValueChange={(v) => setEditForm((f) => ({ ...f, role: v as UserRole }))}
                 disabled={editUser?.id === currentUserId}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                <SelectContent dir="rtl">
                   {(Object.entries(ROLE_LABELS) as [UserRole, string][]).map(([v, l]) => (
                     <SelectItem key={v} value={v}>{l}</SelectItem>
                   ))}
@@ -171,8 +171,8 @@ export function UsersManager({ users: initialUsers, currentUserId }: UsersManage
               <div className="space-y-1">
                 <Label>תפקיד *</Label>
                 <Select value={inviteForm.role} onValueChange={(v) => setInviteForm((f) => ({ ...f, role: v as UserRole }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                  <SelectContent dir="rtl">
                     {(Object.entries(ROLE_LABELS) as [UserRole, string][]).map(([v, l]) => (
                       <SelectItem key={v} value={v}>{l}</SelectItem>
                     ))}

@@ -150,10 +150,10 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
           className="flex-1"
         />
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as LeadStatus | "all")}>
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger dir="rtl" className="w-full sm:w-44">
             <SelectValue placeholder="כל הסטטוסים" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent dir="rtl">
             <SelectItem value="all">כל הסטטוסים</SelectItem>
             {(Object.entries(STATUS_LABELS) as [LeadStatus, string][]).map(([v, l]) => (
               <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -184,8 +184,8 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
               <div className="space-y-1">
                 <Label>סטטוס</Label>
                 <Select value={form.status} onValueChange={(v) => setF("status", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+                  <SelectContent dir="rtl">
                     {(Object.entries(STATUS_LABELS) as [LeadStatus, string][]).map(([v, l]) => (
                       <SelectItem key={v} value={v}>{l}</SelectItem>
                     ))}
@@ -241,7 +241,7 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
-              <Dialog>
+              <Dialog open={selectedLead?.id === lead.id} onOpenChange={(open) => { if (!open) setSelectedLead(null); }}>
                 <DialogTrigger asChild>
                   <Button size="sm" variant="outline" onClick={() => setSelectedLead(lead)}>ערוך</Button>
                 </DialogTrigger>
@@ -256,8 +256,8 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
                 )}
               </Dialog>
               <Select value={lead.status} onValueChange={(v) => updateLeadStatus(lead.id, v as LeadStatus)}>
-                <SelectTrigger className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger dir="rtl" className="h-8 text-xs w-40"><SelectValue /></SelectTrigger>
+                <SelectContent dir="rtl">
                   {(Object.entries(STATUS_LABELS) as [LeadStatus, string][]).map(([v, l]) => (
                     <SelectItem key={v} value={v} className="text-xs">{l}</SelectItem>
                   ))}
@@ -295,8 +295,8 @@ function LeadDetailDialog({
         <div className="space-y-1">
           <Label>סטטוס</Label>
           <Select value={lead.status} onValueChange={(v) => onStatusChange(lead.id, v as LeadStatus)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
+            <SelectTrigger dir="rtl"><SelectValue /></SelectTrigger>
+            <SelectContent dir="rtl">
               {(Object.entries(STATUS_LABELS) as [LeadStatus, string][]).map(([v, l]) => (
                 <SelectItem key={v} value={v}>{l}</SelectItem>
               ))}
@@ -315,8 +315,8 @@ function LeadDetailDialog({
           {availableVenues.length > 0 && (
             <div className="flex gap-2 mt-2">
               <Select value={addingVenue} onValueChange={setAddingVenue}>
-                <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="הוסף אולם..." /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger dir="rtl" className="flex-1 h-8 text-xs"><SelectValue placeholder="הוסף אולם..." /></SelectTrigger>
+                <SelectContent dir="rtl">
                   {availableVenues.map((v) => (
                     <SelectItem key={v.id} value={v.id} className="text-xs">{v.name}</SelectItem>
                   ))}
