@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export function VenueGallery({ venueId }: VenueGalleryProps) {
   const [images, setImages] = useState<VenueImageRow[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   async function load() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -129,7 +129,7 @@ export function VenueGallery({ venueId }: VenueGalleryProps) {
                   alt="venue"
                   fill
                   className="object-cover"
-                  unoptimized
+
                 />
               </div>
 

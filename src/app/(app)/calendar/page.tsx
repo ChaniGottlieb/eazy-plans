@@ -1,24 +1,15 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { VenueCalendar } from "@/components/calendar/VenueCalendar";
+import { getUserProfile } from "@/lib/supabase/queries";
+import { VenueCalendarClient } from "@/components/calendar/VenueCalendarClient";
 import type { VenueRow, EventRow, UserRole } from "@/types/database";
 
 export default async function CalendarPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single() as { data: { role: string } | null };
-
-  const role = (profile?.role ?? "venue_owner") as UserRole;
+  const { supabase, user, profile } = await getUserProfile();
+  if (profile.role === "secretary") redirect("/events");
+  const role = profile.role as UserRole;
 
   // Admins see all venues; owners see only their own
-  const venueQuery = supabase.from("venues").select("*").eq("is_active", true).order("name");
+  const venueQuery = supabase.from("venues").select("id, name").eq("is_active", true).order("name");
   if (role === "venue_owner") venueQuery.eq("owner_user_id", user.id);
 
   const { data: venues } = await venueQuery as { data: VenueRow[] | null };
@@ -43,8 +34,8 @@ export default async function CalendarPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">יומן אירועים</h1>
-      <VenueCalendar
-        venues={venues}
+      <VenueCalendarClient
+        venues={venues as Pick<VenueRow, "id" | "name">[]}
         initialEvents={events ?? []}
         userId={user.id}
         role={role}

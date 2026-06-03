@@ -60,7 +60,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "לידים",
     href: "/leads",
     icon: <Users size={18} />,
-    roles: ["admin"],
+    roles: ["admin", "secretary"],
   },
   {
     label: "הגדרות",

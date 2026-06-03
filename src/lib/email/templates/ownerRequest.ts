@@ -43,7 +43,7 @@ export function ownerRequestHtml(d: OwnerRequestData): string {
   </table>
   ${d.notes ? `<div class="note"><strong>הערות:</strong> ${d.notes}</div>` : ""}
   <p style="margin-top:24px;font-size:14px;color:#374151;">יש להיכנס למערכת Eazyplans כדי לאשר או לדחות את ההזמנה.</p>
-  <div class="footer">Eazyplans — מערכת ניהול אולמות</div>
+  <div class="footer">Eazyplans - מערכת ניהול אולמות</div>
 </div>
 </body></html>`;
 }

@@ -19,8 +19,8 @@ export function Step6Confirmation({ venue, date, eventType, eventId, onNewBookin
     <div className="flex flex-col items-center text-center gap-6 py-6">
       <div className="flex flex-col items-center gap-3">
         <CheckCircle2 size={56} className="text-green-500" strokeWidth={1.5} />
-        <h2 className="text-xl font-bold">האירוע נשמר בהצלחה!</h2>
-        <p className="text-sm text-muted-foreground">הבקשה נשלחה לאישור בעל האולם</p>
+        <h2 className="text-xl font-bold">האירוע אושר בהצלחה!</h2>
+        <p className="text-sm text-muted-foreground">האירוע נרשם במערכת ומאושר</p>
       </div>
 
       <div className="bg-muted rounded-lg p-4 text-sm space-y-2 w-full text-right">
@@ -43,7 +43,7 @@ export function Step6Confirmation({ venue, date, eventType, eventId, onNewBookin
       </div>
 
       <p className="text-xs text-muted-foreground">
-        הסטטוס יעודכן לאחר אישור בעל האולם. תוכל לעקוב אחר האירוע בדף האירועים.
+        תוכל לעקוב אחר האירוע בדף האירועים.
       </p>
 
       <Button onClick={onNewBooking} className="w-full">הזמן אירוע נוסף</Button>

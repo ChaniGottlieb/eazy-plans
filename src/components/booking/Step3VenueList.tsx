@@ -4,9 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { Building2 } from "lucide-react";
+import Image from "next/image";
 import type { VenueRow, VenueImageRow, EventType } from "@/types/database";
 
 type VenueWithImages = VenueRow & { images: VenueImageRow[] };
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+function getImageUrl(path: string) {
+  return `${SUPABASE_URL}/storage/v1/object/public/venue-images/${path}`;
+}
 
 const PRICE_KEY: Record<EventType, keyof VenueRow> = {
   morning: "price_morning",
@@ -53,9 +59,11 @@ export function Step3VenueList({ venues, eventType, onSelect, onBack }: Step3Pro
               {/* Thumbnail */}
               <div className="w-20 h-20 rounded-md bg-muted shrink-0 overflow-hidden flex items-center justify-center">
                 {primaryImage ? (
-                  <img
-                    src={primaryImage.storage_path}
+                  <Image
+                    src={getImageUrl(primaryImage.storage_path)}
                     alt={venue.name}
+                    width={80}
+                    height={80}
                     className="w-full h-full object-cover"
                   />
                 ) : (

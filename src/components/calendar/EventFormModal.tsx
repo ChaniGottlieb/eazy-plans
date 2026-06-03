@@ -37,8 +37,14 @@ interface EventFormModalProps {
   isAdmin: boolean;
 }
 
+function isValidPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s\-]/g, "");
+  return /^0\d{8,9}$/.test(digits);
+}
+
 export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }: EventFormModalProps) {
   const [loading, setLoading] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
   const [form, setForm] = useState({
     event_type: "" as EventType | "",
     event_purpose: "" as EventPurpose | "",
@@ -52,12 +58,17 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
+    if (field === "client_phone") setPhoneError("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.event_type || !form.event_purpose) {
       toast.error("יש לבחור סוג אירוע ומהות");
+      return;
+    }
+    if (!isValidPhone(form.client_phone)) {
+      setPhoneError("מספר טלפון לא תקין (לדוגמה: 052-1234567)");
       return;
     }
 
@@ -73,7 +84,7 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
       date: date.toISOString().split("T")[0],
       event_type: form.event_type,
       event_purpose: form.event_purpose,
-      status: "pending",
+      status: "approved",
       client_name: form.client_name,
       client_phone: form.client_phone,
       client_email: form.client_email,
@@ -138,7 +149,8 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
             </div>
             <div className="space-y-1">
               <Label>טלפון *</Label>
-              <Input type="tel" dir="ltr" value={form.client_phone} onChange={(e) => set("client_phone", e.target.value)} required />
+              <Input type="tel" dir="ltr" value={form.client_phone} onChange={(e) => set("client_phone", e.target.value)} className={phoneError ? "border-destructive" : ""} placeholder="052-1234567" />
+              {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
             </div>
             <div className="space-y-1">
               <Label>מייל *</Label>

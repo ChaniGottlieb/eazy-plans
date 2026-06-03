@@ -10,7 +10,7 @@ export type EventPurpose =
   | "conference"
   | "other";
 
-export type EventStatus = "pending" | "approved" | "rejected" | "cancelled";
+export type EventStatus = "approved" | "cancelled";
 
 export type LeadStatus =
   | "new"

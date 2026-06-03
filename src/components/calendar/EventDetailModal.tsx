@@ -19,47 +19,33 @@ const EVENT_PURPOSE_LABELS: Record<string, string> = {
   birthday: "יום הולדת", conference: "כנס / אירוע עסקי", other: "אחר",
 };
 const STATUS_LABELS: Record<EventStatus, string> = {
-  pending: "ממתין לאישור", approved: "אושר", rejected: "נדחה", cancelled: "בוטל",
+  approved: "אושר", cancelled: "בוטל",
 };
 const STATUS_VARIANTS: Record<EventStatus, "default" | "secondary" | "destructive" | "outline"> = {
-  pending: "outline", approved: "default", rejected: "destructive", cancelled: "secondary",
+  approved: "default", cancelled: "secondary",
 };
 
 interface EventDetailModalProps {
   event: EventRow;
   open: boolean;
   onClose: () => void;
-  canApprove: boolean;  // venue_owner only
   isAdmin: boolean;
 }
 
-export function EventDetailModal({ event, open, onClose, canApprove, isAdmin }: EventDetailModalProps) {
+export function EventDetailModal({ event, open, onClose, isAdmin }: EventDetailModalProps) {
   const [loading, setLoading] = useState(false);
 
-  async function updateStatus(status: EventStatus) {
+  async function cancelEvent() {
     setLoading(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("events") as any)
-      .update({ status })
+      .update({ status: "cancelled" })
       .eq("id", event.id);
     setLoading(false);
 
-    if (error) {
-      toast.error("שגיאה בעדכון הסטטוס");
-      return;
-    }
-    toast.success(status === "approved" ? "האירוע אושר" : "האירוע נדחה");
-
-    // Send client confirmation email when approved (fire-and-forget)
-    if (status === "approved") {
-      fetch("/api/events/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId: event.id, type: "client_confirm" }),
-      }).catch(() => null);
-    }
-
+    if (error) { toast.error("שגיאה בעדכון הסטטוס"); return; }
+    toast.success("האירוע בוטל");
     onClose();
   }
 
@@ -145,32 +131,11 @@ export function EventDetailModal({ event, open, onClose, canApprove, isAdmin }: 
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 pt-2">
-          {canApprove && event.status === "pending" && (
-            <>
-              <Button
-                size="sm"
-                onClick={() => updateStatus("approved")}
-                disabled={loading}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                אשר אירוע
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => updateStatus("rejected")}
-                disabled={loading}
-              >
-                דחה אירוע
-              </Button>
-            </>
-          )}
-
-          {(isAdmin || canApprove) && event.status !== "cancelled" && (
+          {isAdmin && event.status !== "cancelled" && (
             <Button
               size="sm"
               variant="outline"
-              onClick={() => updateStatus("cancelled")}
+              onClick={cancelEvent}
               disabled={loading}
             >
               בטל אירוע

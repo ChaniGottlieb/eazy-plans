@@ -10,7 +10,7 @@ const hebrewFont = Noto_Sans_Hebrew({
 });
 
 export const metadata: Metadata = {
-  title: "Eazyplans — ניהול אולמות אירועים",
+  title: "Eazyplans - ניהול אולמות אירועים",
   description: "מערכת ניהול אולמות אירועים",
 };
 

@@ -19,8 +19,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   approved: "#22c55e",
-  pending: "#f59e0b",
-  rejected: "#ef4444",
+  cancelled: "#ef4444",
 };
 
 type EventRow = {

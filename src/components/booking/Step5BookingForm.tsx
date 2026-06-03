@@ -29,8 +29,14 @@ interface Step5Props {
   onSuccess: (eventId: string) => void;
 }
 
+function isValidPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s\-]/g, "");
+  return /^0\d{8,9}$/.test(digits);
+}
+
 export function Step5BookingForm({ venue, date, eventType, isAdmin, userId, onBack, onSuccess }: Step5Props) {
   const listedPrice = Number(venue[PRICE_KEY[eventType]] ?? 0);
+  const [phoneError, setPhoneError] = useState("");
   const [form, setForm] = useState({
     client_name: "",
     client_phone: "",
@@ -46,6 +52,7 @@ export function Step5BookingForm({ venue, date, eventType, isAdmin, userId, onBa
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
+    if (field === "client_phone") setPhoneError("");
   }
 
   const discount = parseFloat(form.discount_amount) || 0;
@@ -111,12 +118,19 @@ export function Step5BookingForm({ venue, date, eventType, isAdmin, userId, onBa
         .eq("event_type", eventType)
         .eq("locked_by_user_id", userId);
     };
+  // Empty deps: lock must be acquired once for the slot chosen in earlier steps and
+  // released on unmount. Props are frozen by the wizard — they never change while this
+  // step is mounted, so stale-closure is intentional.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.event_purpose) { toast.error("יש לבחור מהות האירוע"); return; }
+    if (!isValidPhone(form.client_phone)) {
+      setPhoneError("מספר טלפון לא תקין (לדוגמה: 052-1234567)");
+      return;
+    }
     if (secondsLeft === 0) { toast.error("הנעילה פגה, חזור ובחר אולם"); return; }
 
     setLoading(true);
@@ -128,7 +142,7 @@ export function Step5BookingForm({ venue, date, eventType, isAdmin, userId, onBa
       date: date.toISOString().split("T")[0],
       event_type: eventType,
       event_purpose: form.event_purpose,
-      status: "pending",
+      status: "approved",
       client_name: form.client_name,
       client_phone: form.client_phone,
       client_email: form.client_email,
@@ -150,11 +164,16 @@ export function Step5BookingForm({ venue, date, eventType, isAdmin, userId, onBa
       return;
     }
 
-    // Send owner request email (fire-and-forget, don't block the UI)
+    // Send emails fire-and-forget
     fetch("/api/events/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ eventId: data.id, type: "owner_request" }),
+    }).catch(() => null);
+    fetch("/api/events/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId: data.id, type: "client_confirm" }),
     }).catch(() => null);
 
     onSuccess(data.id);
@@ -174,78 +193,79 @@ export function Step5BookingForm({ venue, date, eventType, isAdmin, userId, onBa
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Lock timer */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-800 flex justify-between items-center">
-        <span>האולם שמור לך עוד</span>
-        <span className="font-mono font-bold" dir="ltr">{minutes}:{seconds}</span>
-      </div>
-
-      {/* Summary */}
-      <div className="bg-muted rounded-lg p-3 text-sm space-y-1">
-        <div className="flex gap-2"><span className="text-muted-foreground w-20">אולם:</span><span className="font-medium">{venue.name}</span></div>
-        <div className="flex gap-2"><span className="text-muted-foreground w-20">תאריך:</span><span className="font-medium">{formatDate(date)}</span></div>
-        <div className="flex gap-2"><span className="text-muted-foreground w-20">סוג:</span><span className="font-medium">{EVENT_TYPE_LABELS[eventType]}</span></div>
-      </div>
-
-      <div className="space-y-1">
-        <Label>מהות האירוע *</Label>
-        <Select value={form.event_purpose} onValueChange={(v) => set("event_purpose", v)}>
-          <SelectTrigger dir="rtl"><SelectValue placeholder="בחר מהות" /></SelectTrigger>
-          <SelectContent dir="rtl">
-            {(Object.entries(EVENT_PURPOSE_LABELS) as [EventPurpose, string][]).map(([v, l]) => (
-              <SelectItem key={v} value={v}>{l}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1 col-span-2">
-          <Label>שם הלקוח *</Label>
-          <Input value={form.client_name} onChange={(e) => set("client_name", e.target.value)} required />
+        {/* Lock timer */}
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-800 flex justify-between items-center">
+          <span>האולם שמור לך עוד</span>
+          <span className="font-mono font-bold" dir="ltr">{minutes}:{seconds}</span>
         </div>
+
+        {/* Summary */}
+        <div className="bg-muted rounded-lg p-3 text-sm space-y-1">
+          <div className="flex gap-2"><span className="text-muted-foreground w-20">אולם:</span><span className="font-medium">{venue.name}</span></div>
+          <div className="flex gap-2"><span className="text-muted-foreground w-20">תאריך:</span><span className="font-medium">{formatDate(date)}</span></div>
+          <div className="flex gap-2"><span className="text-muted-foreground w-20">סוג:</span><span className="font-medium">{EVENT_TYPE_LABELS[eventType]}</span></div>
+        </div>
+
         <div className="space-y-1">
-          <Label>טלפון *</Label>
-          <Input type="tel" dir="ltr" value={form.client_phone} onChange={(e) => set("client_phone", e.target.value)} required />
+          <Label>מהות האירוע *</Label>
+          <Select value={form.event_purpose} onValueChange={(v) => set("event_purpose", v)}>
+            <SelectTrigger dir="rtl"><SelectValue placeholder="בחר מהות" /></SelectTrigger>
+            <SelectContent dir="rtl">
+              {(Object.entries(EVENT_PURPOSE_LABELS) as [EventPurpose, string][]).map(([v, l]) => (
+                <SelectItem key={v} value={v}>{l}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="space-y-1">
-          <Label>מייל *</Label>
-          <Input type="email" dir="ltr" value={form.client_email} onChange={(e) => set("client_email", e.target.value)} required />
-        </div>
-      </div>
 
-      {/* Pricing */}
-      <div className="bg-muted rounded-lg p-3 space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">מחיר מחירון</span>
-          <span>{formatCurrency(listedPrice)}</span>
-        </div>
-        {isAdmin && (
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-muted-foreground shrink-0">הנחה (₪)</span>
-            <Input
-              type="number" min="0" max={listedPrice}
-              value={form.discount_amount}
-              onChange={(e) => set("discount_amount", e.target.value)}
-              className="h-7 w-28 text-left"
-              dir="ltr"
-            />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1 col-span-2">
+            <Label>שם הלקוח *</Label>
+            <Input value={form.client_name} onChange={(e) => set("client_name", e.target.value)} required />
           </div>
-        )}
-        <div className="flex justify-between font-bold border-t pt-2">
-          <span>מחיר סופי</span>
-          <span>{formatCurrency(finalPrice)}</span>
+          <div className="space-y-1">
+            <Label>טלפון *</Label>
+            <Input type="tel" dir="ltr" value={form.client_phone} onChange={(e) => set("client_phone", e.target.value)} className={phoneError ? "border-destructive" : ""} placeholder="052-1234567" />
+            {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
+          </div>
+          <div className="space-y-1">
+            <Label>מייל *</Label>
+            <Input type="email" dir="ltr" value={form.client_email} onChange={(e) => set("client_email", e.target.value)} required />
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-1">
-        <Label>הערות</Label>
-        <Textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
-      </div>
+        {/* Pricing */}
+        <div className="bg-muted rounded-lg p-3 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">מחיר מחירון</span>
+            <span>{formatCurrency(listedPrice)}</span>
+          </div>
+          {isAdmin && (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-muted-foreground shrink-0">הנחה (₪)</span>
+              <Input
+                type="number" min="0" max={listedPrice}
+                value={form.discount_amount}
+                onChange={(e) => set("discount_amount", e.target.value)}
+                className="h-7 w-28 text-left"
+                dir="ltr"
+              />
+            </div>
+          )}
+          <div className="flex justify-between font-bold border-t pt-2">
+            <span>מחיר סופי</span>
+            <span>{formatCurrency(finalPrice)}</span>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <Label>הערות</Label>
+          <Textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+        </div>
 
       <div className="flex gap-3">
         <Button type="submit" disabled={loading || secondsLeft === 0} className="flex-1">
-          {loading ? "שומר..." : "שמור ושלח לאישור"}
+          {loading ? "שומר..." : "שמור"}
         </Button>
         <Button type="button" variant="outline" onClick={onBack}>חזור</Button>
       </div>

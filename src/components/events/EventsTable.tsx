@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useTransition, useMemo } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,23 +30,18 @@ type EventRow = {
 };
 
 const STATUS_LABELS: Record<EventStatus, string> = {
-  pending: "ממתין לאישור",
   approved: "מאושר",
-  rejected: "נדחה",
   cancelled: "מבוטל",
 };
 
 const STATUS_VARIANT: Record<EventStatus, "default" | "secondary" | "destructive" | "outline"> = {
-  pending: "secondary",
   approved: "default",
-  rejected: "destructive",
   cancelled: "outline",
 };
 
 interface EventsTableProps {
   events: EventRow[];
   role: UserRole;
-  currentUserId: string;
 }
 
 export function EventsTable({ events: initialEvents, role }: EventsTableProps) {
@@ -57,7 +51,7 @@ export function EventsTable({ events: initialEvents, role }: EventsTableProps) {
   const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all");
   const [isPending, startTransition] = useTransition();
 
-  const filtered = events.filter((ev) => {
+  const filtered = useMemo(() => events.filter((ev) => {
     const matchStatus = statusFilter === "all" || ev.status === statusFilter;
     const q = search.toLowerCase();
     const matchSearch = !q ||
@@ -65,40 +59,31 @@ export function EventsTable({ events: initialEvents, role }: EventsTableProps) {
       ev.client_phone.includes(q) ||
       (ev.venue?.name ?? "").toLowerCase().includes(q);
     return matchStatus && matchSearch;
-  });
+  }), [events, search, statusFilter]);
 
-  async function updateStatus(eventId: string, newStatus: EventStatus) {
-    const supabase = createClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from("events") as any)
-      .update({ status: newStatus })
-      .eq("id", eventId);
+  async function cancelEvent(eventId: string) {
+    const res = await fetch("/api/events/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId }),
+    });
 
-    if (error) { toast.error("שגיאה בעדכון סטטוס"); return; }
+    if (!res.ok) { toast.error("שגיאה בביטול האירוע"); return; }
 
-    setEvents((prev) => prev.map((e) => e.id === eventId ? { ...e, status: newStatus } : e));
-    toast.success("הסטטוס עודכן");
-
-    if (newStatus === "approved") {
-      fetch("/api/events/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId, type: "client_confirm" }),
-      }).catch(() => null);
-    }
-
+    const { notified } = await res.json();
+    setEvents((prev) => prev.map((e) => e.id === eventId ? { ...e, status: "cancelled" } : e));
+    toast.success(notified > 0 ? `האירוע בוטל — ${notified} לידים עודכנו` : "האירוע בוטל");
     startTransition(() => router.refresh());
   }
 
-  const canApprove = role === "venue_owner" || role === "admin";
   const canCancel = role === "admin" || role === "secretary";
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col flex-1 min-h-0 gap-4">
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Input
-          placeholder="חיפוש לפי שם לקוח, טלפון, אולם..."
+          placeholder="חיפוש"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1"
@@ -117,6 +102,9 @@ export function EventsTable({ events: initialEvents, role }: EventsTableProps) {
       </div>
 
       <p className="text-sm text-muted-foreground">{filtered.length} אירועים</p>
+
+      {/* Scrollable table area */}
+      <div className="flex-1 overflow-y-auto min-h-0">
 
       {/* Table (desktop) */}
       <div className="hidden md:block overflow-x-auto rounded-lg border">
@@ -159,18 +147,8 @@ export function EventsTable({ events: initialEvents, role }: EventsTableProps) {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1 justify-end">
-                    {canApprove && ev.status === "pending" && (
-                      <>
-                        <Button size="sm" variant="default" onClick={() => updateStatus(ev.id, "approved")} disabled={isPending}>
-                          אשר
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => updateStatus(ev.id, "rejected")} disabled={isPending}>
-                          דחה
-                        </Button>
-                      </>
-                    )}
-                    {canCancel && ev.status !== "cancelled" && ev.status !== "rejected" && (
-                      <Button size="sm" variant="outline" onClick={() => updateStatus(ev.id, "cancelled")} disabled={isPending}>
+                    {canCancel && ev.status !== "cancelled" && (
+                      <Button size="sm" variant="outline" onClick={() => cancelEvent(ev.id)} disabled={isPending}>
                         בטל
                       </Button>
                     )}
@@ -214,27 +192,16 @@ export function EventsTable({ events: initialEvents, role }: EventsTableProps) {
                 <span className="font-medium">{formatCurrency(ev.price_final)}</span>
               </div>
             </div>
-            {(() => {
-              const showApprove = canApprove && ev.status === "pending";
-              const showCancel = canCancel && ev.status !== "cancelled" && ev.status !== "rejected";
-              if (!showApprove && !showCancel) return null;
-              return (
-                <div className="flex gap-2 pt-1">
-                  {showApprove && (
-                    <>
-                      <Button size="sm" className="flex-1" onClick={() => updateStatus(ev.id, "approved")} disabled={isPending}>אשר</Button>
-                      <Button size="sm" variant="destructive" className="flex-1" onClick={() => updateStatus(ev.id, "rejected")} disabled={isPending}>דחה</Button>
-                    </>
-                  )}
-                  {showCancel && (
-                    <Button size="sm" variant="outline" className="flex-1" onClick={() => updateStatus(ev.id, "cancelled")} disabled={isPending}>בטל</Button>
-                  )}
-                </div>
-              );
-            })()}
+            {canCancel && ev.status !== "cancelled" && (
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => cancelEvent(ev.id)} disabled={isPending}>בטל</Button>
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      </div>{/* end scrollable area */}
     </div>
   );
 }

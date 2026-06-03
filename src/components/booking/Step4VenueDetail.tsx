@@ -9,6 +9,11 @@ import { Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import type { VenueRow, VenueImageRow, EventType } from "@/types/database";
 import { EVENT_TYPE_LABELS } from "@/types/booking";
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+function getImageUrl(path: string) {
+  return `${SUPABASE_URL}/storage/v1/object/public/venue-images/${path}`;
+}
+
 type VenueWithImages = VenueRow & { images: VenueImageRow[] };
 
 const PRICE_KEYS: { key: keyof VenueRow; label: string }[] = [
@@ -42,7 +47,7 @@ export function Step4VenueDetail({ venue, eventType, onBook, onBack }: Step4Prop
       {images.length > 0 ? (
         <div className="relative rounded-xl overflow-hidden h-52 bg-muted">
           <img
-            src={images[imgIdx].storage_path}
+            src={getImageUrl(images[imgIdx].storage_path)}
             alt={venue.name}
             className="w-full h-full object-cover"
           />

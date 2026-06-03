@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { he } from "date-fns/locale";
@@ -31,9 +31,7 @@ const MESSAGES = {
 };
 
 function eventClassName(event: EventRow) {
-  const type = `event-${event.event_type}`;
-  const status = event.status === "pending" ? "status-pending" : "";
-  return `${type} ${status}`.trim();
+  return `event-${event.event_type}`;
 }
 
 interface CalendarEvent {
@@ -56,13 +54,14 @@ function toCalendarEvent(e: EventRow): CalendarEvent {
 }
 
 interface VenueCalendarProps {
-  venues: VenueRow[];
+  venues: Pick<VenueRow, "id" | "name">[];
   initialEvents: EventRow[];
   userId: string;
   role: UserRole;
 }
 
 export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCalendarProps) {
+  const supabase = useMemo(() => createClient(), []);
   const [selectedVenueId, setSelectedVenueId] = useState(venues[0]?.id ?? "");
   const [events, setEvents] = useState<EventRow[]>(initialEvents.filter((e) => e.venue_id === venues[0]?.id));
   const [view, setView] = useState<View>("month");
@@ -73,18 +72,16 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
   const [detailModal, setDetailModal] = useState<{ open: boolean; event: EventRow | null }>({ open: false, event: null });
 
   const isAdmin = role === "admin";
-  const canApprove = role === "venue_owner";
 
   // Reload events when venue changes
   const loadEvents = useCallback(async (venueId: string) => {
-    const supabase = createClient();
     const { data } = await supabase
       .from("events")
       .select("*")
       .eq("venue_id", venueId)
       .order("date") as { data: EventRow[] | null };
     setEvents(data ?? []);
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (selectedVenueId) loadEvents(selectedVenueId);
@@ -93,7 +90,6 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
   // Supabase Realtime — reflect changes from other users instantly
   useEffect(() => {
     if (!selectedVenueId) return;
-    const supabase = createClient();
 
     const channel = supabase
       .channel(`events:venue:${selectedVenueId}`)
@@ -121,7 +117,7 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
     loadEvents(selectedVenueId);
   }
 
-  const calendarEvents = events.map(toCalendarEvent);
+  const calendarEvents = useMemo(() => events.map(toCalendarEvent), [events]);
 
   return (
     <div className="space-y-4">
@@ -155,10 +151,6 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
             {label}
           </span>
         ))}
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-3 rounded-sm border-2 border-dashed border-slate-400" />
-          ממתין לאישור
-        </span>
       </div>
 
       <div className="h-[calc(100vh-180px)] min-h-[520px]">
@@ -196,7 +188,6 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
           open={detailModal.open}
           onClose={handleModalClose}
           event={detailModal.event}
-          canApprove={canApprove}
           isAdmin={isAdmin}
         />
       )}

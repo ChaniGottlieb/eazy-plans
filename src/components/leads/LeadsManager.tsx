@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,11 @@ interface LeadsManagerProps {
 
 const EMPTY_FORM = { client_name: "", client_phone: "", client_email: "", notes: "", status: "new" as LeadStatus };
 
+function isValidPhone(phone: string): boolean {
+  const digits = phone.replace(/[\s\-]/g, "");
+  return /^0\d{8,9}$/.test(digits);
+}
+
 export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps) {
   const router = useRouter();
   const [leads, setLeads] = useState(initialLeads);
@@ -60,10 +65,11 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("all");
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [phoneError, setPhoneError] = useState("");
   const [saving, setSaving] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
 
-  const filtered = leads.filter((l) => {
+  const filtered = useMemo(() => leads.filter((l) => {
     const matchStatus = statusFilter === "all" || l.status === statusFilter;
     const q = search.toLowerCase();
     const matchSearch = !q ||
@@ -71,14 +77,19 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
       l.client_phone.includes(q) ||
       (l.client_email ?? "").toLowerCase().includes(q);
     return matchStatus && matchSearch;
-  });
+  }), [leads, search, statusFilter]);
 
   function setF(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
+    if (field === "client_phone") setPhoneError("");
   }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidPhone(form.client_phone)) {
+      setPhoneError("מספר טלפון לא תקין (לדוגמה: 052-1234567)");
+      return;
+    }
     setSaving(true);
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -122,7 +133,7 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
       .eq("id", leadId);
     if (error) { toast.error("שגיאה בשמירת הערות"); return; }
     setLeads((prev) => prev.map((l) => l.id === leadId ? { ...l, notes } : l));
-    if (selectedLead?.id === leadId) setSelectedLead((l) => l ? { ...l, notes } : l);
+    setSelectedLead(null);
     toast.success("ההערות נשמרו");
   }
 
@@ -140,11 +151,11 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col flex-1 min-h-0 gap-4">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Input
-          placeholder="חיפוש לפי שם, טלפון, מייל..."
+          placeholder="חיפוש"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1"
@@ -175,7 +186,8 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
               </div>
               <div className="space-y-1">
                 <Label>טלפון *</Label>
-                <Input type="tel" dir="ltr" value={form.client_phone} onChange={(e) => setF("client_phone", e.target.value)} required />
+                <Input type="tel" dir="ltr" value={form.client_phone} onChange={(e) => setF("client_phone", e.target.value)} className={phoneError ? "border-destructive" : ""} placeholder="052-1234567" />
+                {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
               </div>
               <div className="space-y-1">
                 <Label>מייל</Label>
@@ -208,6 +220,7 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
       <p className="text-sm text-muted-foreground">{filtered.length} לידים</p>
 
       {/* Lead cards */}
+      <div className="flex-1 overflow-y-auto min-h-0">
       <div className="space-y-3">
         {filtered.length === 0 && (
           <p className="text-center py-10 text-muted-foreground">אין לידים תואמים</p>
@@ -267,9 +280,12 @@ export function LeadsManager({ leads: initialLeads, venues }: LeadsManagerProps)
           </div>
         ))}
       </div>
+      </div>{/* end scrollable area */}
     </div>
   );
 }
+
+type WaitlistEntry = { id: string; venue_id: string; requested_date: string; venues: { name: string } | null };
 
 function LeadDetailDialog({
   lead, venues, onStatusChange, onNotesChange, onAddVenue,
@@ -282,6 +298,47 @@ function LeadDetailDialog({
 }) {
   const [notes, setNotes] = useState(lead.notes ?? "");
   const [addingVenue, setAddingVenue] = useState("");
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [waitlistVenue, setWaitlistVenue] = useState("");
+  const [waitlistDate, setWaitlistDate] = useState("");
+  const [addingWaitlist, setAddingWaitlist] = useState(false);
+
+  const showWaitlist = lead.status === "waiting_for_date" || lead.status === "date_taken";
+
+  useEffect(() => {
+    if (!showWaitlist) return;
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase.from("waitlist") as any)
+      .select("id, venue_id, requested_date, venues(name)")
+      .eq("lead_id", lead.id)
+      .order("requested_date")
+      .then(({ data }: { data: WaitlistEntry[] | null }) => setWaitlist(data ?? []));
+  }, [lead.id, showWaitlist]);
+
+  async function handleAddWaitlist() {
+    if (!waitlistVenue || !waitlistDate) return;
+    setAddingWaitlist(true);
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.from("waitlist") as any)
+      .insert({ lead_id: lead.id, venue_id: waitlistVenue, requested_date: waitlistDate })
+      .select("id, venue_id, requested_date, venues(name)")
+      .single();
+    setAddingWaitlist(false);
+    if (error) { toast.error("שגיאה בהוספה להמתנה"); return; }
+    setWaitlist((prev) => [...prev, data]);
+    setWaitlistVenue("");
+    setWaitlistDate("");
+    toast.success("נוסף לרשימת המתנה");
+  }
+
+  async function handleRemoveWaitlist(id: string) {
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("waitlist") as any).delete().eq("id", id);
+    setWaitlist((prev) => prev.filter((w) => w.id !== id));
+  }
 
   const existingVenueIds = new Set(lead.interests.map((i) => i.venue?.id).filter(Boolean));
   const availableVenues = venues.filter((v) => !existingVenueIds.has(v.id));
@@ -328,6 +385,41 @@ function LeadDetailDialog({
             </div>
           )}
         </div>
+
+        {showWaitlist && (
+          <div className="space-y-2">
+            <Label>רשימת המתנה לתאריכים</Label>
+            {waitlist.length === 0 && (
+              <p className="text-xs text-muted-foreground">אין תאריכים ברשימת המתנה</p>
+            )}
+            {waitlist.map((w) => (
+              <div key={w.id} className="flex items-center justify-between text-xs bg-muted rounded px-3 py-1.5">
+                <span>{w.venues?.name ?? "—"} — {new Date(w.requested_date).toLocaleDateString("he-IL")}</span>
+                <button onClick={() => handleRemoveWaitlist(w.id)} className="text-muted-foreground hover:text-destructive transition-colors ml-2">✕</button>
+              </div>
+            ))}
+            <div className="flex gap-2 mt-1">
+              <Select value={waitlistVenue} onValueChange={setWaitlistVenue}>
+                <SelectTrigger dir="rtl" className="flex-1 h-8 text-xs"><SelectValue placeholder="אולם..." /></SelectTrigger>
+                <SelectContent dir="rtl">
+                  {venues.map((v) => (
+                    <SelectItem key={v.id} value={v.id} className="text-xs">{v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                type="date"
+                value={waitlistDate}
+                onChange={(e) => setWaitlistDate(e.target.value)}
+                className="h-8 text-xs w-36"
+                dir="ltr"
+              />
+              <Button size="sm" disabled={!waitlistVenue || !waitlistDate || addingWaitlist} onClick={handleAddWaitlist}>
+                +
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-1">
           <Label>הערות</Label>

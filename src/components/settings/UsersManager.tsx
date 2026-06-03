@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { inviteUser } from "@/app/actions/invite-user";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { formatDate } from "@/lib/utils";
 import type { UserRole } from "@/types/database";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: "מנהל",
@@ -35,12 +37,14 @@ interface UsersManagerProps {
 export function UsersManager({ users: initialUsers, currentUserId }: UsersManagerProps) {
   const router = useRouter();
   const [users, setUsers] = useState(initialUsers);
+  useEffect(() => { setUsers(initialUsers); }, [initialUsers]);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: "", full_name: "", role: "secretary" as UserRole });
+  const [inviteForm, setInviteForm] = useState({ email: "", full_name: "", role: "secretary" as UserRole, password: "" });
   const [inviteLoading, setInviteLoading] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [editForm, setEditForm] = useState({ full_name: "", role: "secretary" as UserRole });
   const [editLoading, setEditLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   function openEdit(u: UserRow) {
     setEditForm({ full_name: u.full_name, role: u.role });
@@ -71,20 +75,14 @@ export function UsersManager({ users: initialUsers, currentUserId }: UsersManage
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
     setInviteLoading(true);
-    const supabase = createClient();
-    const tempPassword = Math.random().toString(36).slice(-12) + "Aa1!";
-    const { error } = await supabase.auth.signUp({
-      email: inviteForm.email,
-      password: tempPassword,
-      options: { data: { full_name: inviteForm.full_name, role: inviteForm.role } },
-    });
+    const result = await inviteUser(inviteForm.email, inviteForm.full_name, inviteForm.role, inviteForm.password);
     setInviteLoading(false);
 
-    if (error) { toast.error("שגיאה ביצירת משתמש: " + error.message); return; }
+    if (result.error) { toast.error("שגיאה ביצירת משתמש: " + result.error); return; }
 
-    toast.success("המשתמש נוצר. יש לשלוח לו/לה את הסיסמה הזמנית ידנית.");
+    toast.success("המשתמש נוצר בהצלחה.");
     setInviteOpen(false);
-    setInviteForm({ email: "", full_name: "", role: "secretary" });
+    setInviteForm({ email: "", full_name: "", role: "secretary", password: "" });
     router.refresh();
   }
 
@@ -92,7 +90,7 @@ export function UsersManager({ users: initialUsers, currentUserId }: UsersManage
     <div className="space-y-6">
       {/* Edit dialog */}
       <Dialog open={!!editUser} onOpenChange={(open) => { if (!open) setEditUser(null); }}>
-        <DialogContent>
+        <DialogContent dir="rtl">
           <DialogHeader>
             <DialogTitle>עריכת משתמש</DialogTitle>
           </DialogHeader>
@@ -145,7 +143,7 @@ export function UsersManager({ users: initialUsers, currentUserId }: UsersManage
           <DialogTrigger asChild>
             <Button>הוסף משתמש</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent dir="rtl">
             <DialogHeader>
               <DialogTitle>הוספת משתמש חדש</DialogTitle>
             </DialogHeader>
@@ -179,9 +177,30 @@ export function UsersManager({ users: initialUsers, currentUserId }: UsersManage
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-xs text-muted-foreground">
-                המשתמש ייווצר עם סיסמה זמנית. יש לשלוח לו/לה את הסיסמה ידנית ולבקש לשנות אותה.
-              </p>
+              <div className="space-y-1">
+                <Label>סיסמה *</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    dir="ltr"
+                    value={inviteForm.password}
+                    onChange={(e) => setInviteForm((f) => ({ ...f, password: e.target.value }))}
+                    required
+                    minLength={8}
+                    placeholder="לפחות 8 תווים"
+                    className="pl-9"
+                  />
+                  <button
+                    type="button"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">העבר/י את הסיסמה למשתמש באופן ידני.</p>
+              </div>
               <div className="flex gap-3 pt-2">
                 <Button type="submit" disabled={inviteLoading} className="flex-1">
                   {inviteLoading ? "יוצר..." : "צור משתמש"}

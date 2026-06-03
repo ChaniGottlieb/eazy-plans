@@ -1,6 +1,7 @@
 import { resend } from "./resend";
 import { ownerRequestHtml } from "./templates/ownerRequest";
 import { clientConfirmHtml } from "./templates/clientConfirm";
+import { waitlistNotifyHtml } from "./templates/waitlistNotify";
 import { EVENT_TYPE_LABELS, EVENT_PURPOSE_LABELS } from "@/types/booking";
 import { formatCurrency } from "@/lib/utils";
 
@@ -18,6 +19,24 @@ const HOURS_MAP: Record<string, [string, string]> = {
   full_day: ["hours_full_start", "hours_full_end"],
   shabbat: ["hours_shabbat_start", "hours_shabbat_end"],
 };
+
+export async function sendWaitlistNotifyEmail(
+  clientEmail: string,
+  clientName: string,
+  venueName: string,
+  dateStr: string,
+) {
+  const date = new Date(dateStr).toLocaleDateString("he-IL", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+  const html = waitlistNotifyHtml({ clientName, venueName, date });
+  return resend.emails.send({
+    from: FROM,
+    to: clientEmail,
+    subject: `תאריך התפנה — ${venueName} — ${date}`,
+    html,
+  });
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function sendOwnerRequestEmail(event: any, venue: any, ownerEmail: string) {

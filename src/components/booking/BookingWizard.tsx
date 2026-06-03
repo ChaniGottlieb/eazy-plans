@@ -64,26 +64,36 @@ export function BookingWizard({ isAdmin, userId }: BookingWizardProps) {
     const supabase = createClient();
     const dateStr = date.toISOString().split("T")[0];
 
-    // Fetch all active venues with images
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase.from("venues") as any)
+    let venueQuery = (supabase.from("venues") as any)
       .select("*, images:venue_images(*)")
       .eq("is_active", true)
       .order("name");
 
-    if (filters.city) query = query.ilike("city", `%${filters.city}%`);
-    if (filters.neighborhood) query = query.ilike("neighborhood", `%${filters.neighborhood}%`);
-    if (filters.minCapacity) query = query.gte("max_capacity", parseInt(filters.minCapacity));
+    if (filters.city) venueQuery = venueQuery.ilike("city", `%${filters.city}%`);
+    if (filters.neighborhood) venueQuery = venueQuery.ilike("neighborhood", `%${filters.neighborhood}%`);
+    if (filters.minCapacity) venueQuery = venueQuery.gte("max_capacity", parseInt(filters.minCapacity));
 
-    const { data: allVenues } = await query;
-    if (!allVenues) { setLoadingVenues(false); return; }
+    const nowIso = new Date().toISOString();
 
-    // Get booked slots for this date
+    // Fetch venues, booked events, and active locks in parallel
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: bookedEvents } = await (supabase.from("events") as any)
-      .select("venue_id, event_type")
-      .eq("date", dateStr)
-      .neq("status", "cancelled");
+    const [{ data: allVenues }, { data: bookedEvents }, { data: locks }] = await Promise.all([
+      venueQuery,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from("events") as any)
+        .select("venue_id, event_type")
+        .eq("date", dateStr)
+        .neq("status", "cancelled"),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase.from("booking_locks") as any)
+        .select("venue_id, event_type")
+        .eq("date", dateStr)
+        .gt("locked_until", nowIso)
+        .neq("locked_by_user_id", userId),
+    ]);
+
+    if (!allVenues) { setLoadingVenues(false); return; }
 
     const bookedSet = new Set<string>();
     for (const ev of bookedEvents ?? []) {
@@ -96,15 +106,6 @@ export function BookingWizard({ isAdmin, userId }: BookingWizardProps) {
         bookedSet.add(`${ev.venue_id}:full_day`);
       }
     }
-
-    // Get active booking locks for this slot
-    const nowIso = new Date().toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: locks } = await (supabase.from("booking_locks") as any)
-      .select("venue_id, event_type")
-      .eq("date", dateStr)
-      .gt("locked_until", nowIso)
-      .neq("locked_by_user_id", userId);
 
     for (const lock of locks ?? []) {
       bookedSet.add(`${lock.venue_id}:${lock.event_type}`);

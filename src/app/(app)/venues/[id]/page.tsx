@@ -1,12 +1,13 @@
-import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { getUserProfile } from "@/lib/supabase/queries";
 import { VenueForm } from "@/components/venues/VenueForm";
 import { VenueGallery } from "@/components/venues/VenueGallery";
 import type { VenueRow, UserRow } from "@/types/database";
 
 export default async function VenueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const { supabase, profile } = await getUserProfile();
+  if (profile.role !== "admin") redirect("/venues");
 
   const [{ data: venue }, { data: owners }] = await Promise.all([
     supabase.from("venues").select("*").eq("id", id).single() as unknown as Promise<{ data: VenueRow | null }>,

@@ -42,7 +42,7 @@ export function reminderHtml(d: ReminderData): string {
   </table>
   ${d.parkingInfo ? `<div class="section"><h3>חנייה</h3><p>${d.parkingInfo}</p></div>` : ""}
   ${d.publicTransportInfo ? `<div class="section"><h3>תחבורה ציבורית</h3><p>${d.publicTransportInfo}</p></div>` : ""}
-  <div class="footer">Eazyplans — מערכת ניהול אולמות</div>
+  <div class="footer">Eazyplans - מערכת ניהול אולמות</div>
 </div>
 </body></html>`;
 }
