@@ -37,14 +37,14 @@ export default async function VenuesPage() {
             <>
               <p className="text-sm">הוסף את האולם הראשון שלך</p>
               <div className="mt-2">
-                <AddVenueModal owners={owners} />
+                <AddVenueModal owners={owners ?? []} />
               </div>
             </>
           )}
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto min-h-0">
-          <VenuesTable venues={venues} owners={owners} isAdmin={isAdmin} />
+          <VenuesTable venues={venues} owners={owners ?? []} isAdmin={isAdmin} />
         </div>
       )}
     </div>
