@@ -26,7 +26,7 @@ export default async function VenuesPage() {
             {venues?.length ?? 0} אולמות במערכת
           </p>
         </div>
-        {isAdmin && <AddVenueModal owners={owners} />}
+        {isAdmin && <AddVenueModal owners={owners ?? []} />}
       </div>
 
       {!venues?.length ? (
