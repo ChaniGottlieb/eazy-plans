@@ -220,7 +220,7 @@ export function UsersManager({ users: initialUsers, currentUserId }: UsersManage
       {/* Table (desktop) */}
       <div className="hidden md:block overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
-          <thead className="bg-muted text-muted-foreground">
+          <thead className="bg-muted text-muted-foreground sticky top-0 z-10">
             <tr>
               <th className="text-right px-4 py-3 font-medium">שם</th>
               <th className="text-right px-4 py-3 font-medium">אימייל</th>

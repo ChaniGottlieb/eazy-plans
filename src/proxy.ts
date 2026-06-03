@@ -77,8 +77,8 @@ export async function proxy(request: NextRequest) {
 
   const role = (profile?.role as UserRole) ?? "secretary";
 
-  // Leads page — admin only
-  if (pathname.startsWith("/leads") && role !== "admin") {
+  // Leads page — admin and secretary only
+  if (pathname.startsWith("/leads") && !["admin", "secretary"].includes(role)) {
     return NextResponse.redirect(new URL(ROLE_HOME[role], request.url));
   }
 

@@ -72,6 +72,7 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
   const [detailModal, setDetailModal] = useState<{ open: boolean; event: EventRow | null }>({ open: false, event: null });
 
   const isAdmin = role === "admin";
+  const canCancel = isAdmin || role === "venue_owner";
 
   // Reload events when venue changes
   const loadEvents = useCallback(async (venueId: string) => {
@@ -120,7 +121,7 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
   const calendarEvents = useMemo(() => events.map(toCalendarEvent), [events]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col flex-1 min-h-0 gap-4">
       {/* Venue selector — shown if user has multiple venues */}
       {venues.length > 1 && (
         <div className="flex items-center gap-3">
@@ -153,7 +154,7 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
         ))}
       </div>
 
-      <div className="h-[calc(100vh-180px)] min-h-[520px]">
+      <div className="flex-1 min-h-[520px]">
         <Calendar
           localizer={localizer}
           events={calendarEvents}
@@ -165,6 +166,7 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
           onSelectEvent={handleSelectEvent}
           selectable
           style={{ height: "100%" }}
+          views={["month", "week", "day"]}
           messages={MESSAGES}
           culture="he"
           eventPropGetter={(calEvent) => ({
@@ -189,6 +191,7 @@ export function VenueCalendar({ venues, initialEvents, userId, role }: VenueCale
           onClose={handleModalClose}
           event={detailModal.event}
           isAdmin={isAdmin}
+          canCancel={canCancel}
         />
       )}
     </div>

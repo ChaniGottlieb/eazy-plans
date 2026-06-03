@@ -8,7 +8,7 @@ export default async function BookingPage() {
   const isAdmin = profile.role === "admin";
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 flex-1 flex flex-col min-h-0">
       <BookingWizard isAdmin={isAdmin} userId={user.id} />
     </div>
   );

@@ -24,9 +24,10 @@ interface EventDetailModalProps {
   open: boolean;
   onClose: () => void;
   isAdmin: boolean;
+  canCancel?: boolean;
 }
 
-export function EventDetailModal({ event, open, onClose, isAdmin }: EventDetailModalProps) {
+export function EventDetailModal({ event, open, onClose, isAdmin, canCancel }: EventDetailModalProps) {
   const [loading, setLoading] = useState(false);
 
   async function cancelEvent() {
@@ -125,7 +126,7 @@ export function EventDetailModal({ event, open, onClose, isAdmin }: EventDetailM
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 pt-2">
-          {isAdmin && event.status !== "cancelled" && (
+          {(isAdmin || canCancel) && event.status !== "cancelled" && (
             <Button
               size="sm"
               variant="outline"

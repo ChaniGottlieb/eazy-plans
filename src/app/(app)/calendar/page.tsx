@@ -32,8 +32,8 @@ export default async function CalendarPage() {
     .order("date") as { data: EventRow[] | null };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">יומן אירועים</h1>
+    <div className="flex flex-col flex-1 min-h-0 gap-4">
+      <h1 className="text-2xl font-bold shrink-0">יומן אירועים</h1>
       <VenueCalendarClient
         venues={venues as Pick<VenueRow, "id" | "name">[]}
         initialEvents={events ?? []}

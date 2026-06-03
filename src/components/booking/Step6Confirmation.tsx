@@ -16,37 +16,41 @@ interface Step6Props {
 
 export function Step6Confirmation({ venue, date, eventType, eventId, onNewBooking }: Step6Props) {
   return (
-    <div className="flex flex-col items-center text-center gap-6 py-6">
-      <div className="flex flex-col items-center gap-3">
-        <CheckCircle2 size={56} className="text-green-500" strokeWidth={1.5} />
-        <h2 className="text-xl font-bold">האירוע אושר בהצלחה!</h2>
-        <p className="text-sm text-muted-foreground">האירוע נרשם במערכת ומאושר</p>
+    <div className="flex flex-col min-h-full">
+      <div className="flex-1 flex flex-col items-center text-center gap-6 py-6">
+        <div className="flex flex-col items-center gap-3">
+          <CheckCircle2 size={56} className="text-green-500" strokeWidth={1.5} />
+          <h2 className="text-xl font-bold">האירוע אושר בהצלחה!</h2>
+          <p className="text-sm text-muted-foreground">האירוע נרשם במערכת ומאושר</p>
+        </div>
+
+        <div className="bg-muted rounded-lg p-4 text-sm space-y-2 w-full text-right">
+          <div className="flex gap-2 justify-between">
+            <span className="text-muted-foreground">אולם:</span>
+            <span className="font-medium">{venue.name}</span>
+          </div>
+          <div className="flex gap-2 justify-between">
+            <span className="text-muted-foreground">תאריך:</span>
+            <span className="font-medium">{formatDate(date)}</span>
+          </div>
+          <div className="flex gap-2 justify-between">
+            <span className="text-muted-foreground">סוג:</span>
+            <span className="font-medium">{EVENT_TYPE_LABELS[eventType]}</span>
+          </div>
+          <div className="flex gap-2 justify-between">
+            <span className="text-muted-foreground">מספר אירוע:</span>
+            <span className="font-mono text-xs">{eventId.slice(0, 8).toUpperCase()}</span>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          תוכל לעקוב אחר האירוע בדף האירועים.
+        </p>
       </div>
 
-      <div className="bg-muted rounded-lg p-4 text-sm space-y-2 w-full text-right">
-        <div className="flex gap-2 justify-between">
-          <span className="text-muted-foreground">אולם:</span>
-          <span className="font-medium">{venue.name}</span>
-        </div>
-        <div className="flex gap-2 justify-between">
-          <span className="text-muted-foreground">תאריך:</span>
-          <span className="font-medium">{formatDate(date)}</span>
-        </div>
-        <div className="flex gap-2 justify-between">
-          <span className="text-muted-foreground">סוג:</span>
-          <span className="font-medium">{EVENT_TYPE_LABELS[eventType]}</span>
-        </div>
-        <div className="flex gap-2 justify-between">
-          <span className="text-muted-foreground">מספר אירוע:</span>
-          <span className="font-mono text-xs">{eventId.slice(0, 8).toUpperCase()}</span>
-        </div>
+      <div className="sticky bottom-0 bg-background pt-3 pb-1">
+        <Button onClick={onNewBooking} className="w-full">הזמן אירוע נוסף</Button>
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        תוכל לעקוב אחר האירוע בדף האירועים.
-      </p>
-
-      <Button onClick={onNewBooking} className="w-full">הזמן אירוע נוסף</Button>
     </div>
   );
 }

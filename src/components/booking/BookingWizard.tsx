@@ -166,10 +166,10 @@ export function BookingWizard({ isAdmin, userId }: BookingWizardProps) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Step indicator */}
+    <div className="max-w-2xl mx-auto w-full flex flex-col flex-1 min-h-0">
+      {/* Step indicator — fixed top */}
       {step < 6 && (
-        <div className="mb-6">
+        <div className="mb-4 shrink-0">
           <div className="flex items-center justify-between mb-2">
             <h1 className="text-lg font-semibold">{STEP_TITLES[step]}</h1>
             <span className="text-sm text-muted-foreground">שלב {step} מתוך 5</span>
@@ -187,64 +187,67 @@ export function BookingWizard({ isAdmin, userId }: BookingWizardProps) {
         </div>
       )}
 
-      {step === 1 && (
-        <Step1DateType
-          date={date}
-          eventType={eventType}
-          onChange={handleStep1Change}
-          onNext={() => setStep(2)}
-        />
-      )}
-      {step === 2 && date && eventType && (
-        <Step2Filters
-          date={date}
-          eventType={eventType}
-          city={filters.city}
-          neighborhood={filters.neighborhood}
-          minCapacity={filters.minCapacity}
-          maxPrice={filters.maxPrice}
-          onChange={handleFilterChange}
-          onNext={handleStep2Next}
-          onBack={() => setStep(1)}
-          loading={loadingVenues}
-        />
-      )}
-      {step === 3 && eventType && (
-        <Step3VenueList
-          venues={venues}
-          eventType={eventType}
-          onSelect={handleVenueSelect}
-          onBack={() => setStep(2)}
-        />
-      )}
-      {step === 4 && selectedVenue && eventType && (
-        <Step4VenueDetail
-          venue={selectedVenue}
-          eventType={eventType}
-          onBook={handleBook}
-          onBack={() => setStep(3)}
-        />
-      )}
-      {step === 5 && selectedVenue && date && eventType && (
-        <Step5BookingForm
-          venue={selectedVenue}
-          date={date}
-          eventType={eventType}
-          isAdmin={isAdmin}
-          userId={userId}
-          onBack={() => setStep(4)}
-          onSuccess={handleBookingSuccess}
-        />
-      )}
-      {step === 6 && selectedVenue && date && eventType && (
-        <Step6Confirmation
-          venue={selectedVenue}
-          date={date}
-          eventType={eventType}
-          eventId={confirmedEventId}
-          onNewBooking={handleNewBooking}
-        />
-      )}
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        {step === 1 && (
+          <Step1DateType
+            date={date}
+            eventType={eventType}
+            onChange={handleStep1Change}
+            onNext={() => setStep(2)}
+          />
+        )}
+        {step === 2 && date && eventType && (
+          <Step2Filters
+            date={date}
+            eventType={eventType}
+            city={filters.city}
+            neighborhood={filters.neighborhood}
+            minCapacity={filters.minCapacity}
+            maxPrice={filters.maxPrice}
+            onChange={handleFilterChange}
+            onNext={handleStep2Next}
+            onBack={() => setStep(1)}
+            loading={loadingVenues}
+          />
+        )}
+        {step === 3 && eventType && (
+          <Step3VenueList
+            venues={venues}
+            eventType={eventType}
+            onSelect={handleVenueSelect}
+            onBack={() => setStep(2)}
+          />
+        )}
+        {step === 4 && selectedVenue && eventType && (
+          <Step4VenueDetail
+            venue={selectedVenue}
+            eventType={eventType}
+            onBook={handleBook}
+            onBack={() => setStep(3)}
+          />
+        )}
+        {step === 5 && selectedVenue && date && eventType && (
+          <Step5BookingForm
+            venue={selectedVenue}
+            date={date}
+            eventType={eventType}
+            isAdmin={isAdmin}
+            userId={userId}
+            onBack={() => setStep(4)}
+            onSuccess={handleBookingSuccess}
+          />
+        )}
+        {step === 6 && selectedVenue && date && eventType && (
+          <Step6Confirmation
+            venue={selectedVenue}
+            date={date}
+            eventType={eventType}
+            eventId={confirmedEventId}
+            onNewBooking={handleNewBooking}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -111,12 +111,12 @@ export function EventsTable({ events: initialEvents, role }: EventsTableProps) {
       <p className="text-sm text-muted-foreground">{filtered.length} אירועים</p>
 
       {/* Scrollable table area */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-auto min-h-0">
 
       {/* Table (desktop) */}
-      <div className="hidden md:block overflow-x-auto rounded-lg border">
+      <div className="hidden md:block rounded-lg border">
         <table className="w-full text-sm">
-          <thead className="bg-muted text-muted-foreground">
+          <thead className="bg-muted text-muted-foreground sticky top-0 z-10">
             <tr>
               <th className="text-right px-4 py-3 font-medium">תאריך</th>
               <th className="text-right px-4 py-3 font-medium">אולם</th>

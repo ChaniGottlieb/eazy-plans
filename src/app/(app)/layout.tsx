@@ -7,7 +7,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen">
       <Sidebar role={profile.role} fullName={profile.full_name} />
-      <main className="flex-1 p-6 overflow-auto flex flex-col">{children}</main>
+      <main className="flex-1 p-6 overflow-y-auto overflow-x-hidden flex flex-col">{children}</main>
     </div>
   );
 }

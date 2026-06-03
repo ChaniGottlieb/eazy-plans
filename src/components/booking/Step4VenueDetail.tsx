@@ -42,7 +42,8 @@ export function Step4VenueDetail({ venue, eventType, onBook, onBack }: Step4Prop
   const images = venue.images;
 
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col min-h-full">
+      <div className="flex-1 space-y-5">
       {/* Image gallery */}
       {images.length > 0 ? (
         <div className="relative rounded-xl overflow-hidden h-52 bg-muted">
@@ -151,7 +152,9 @@ export function Step4VenueDetail({ venue, eventType, onBook, onBack }: Step4Prop
         </>
       )}
 
-      <div className="flex gap-3 pt-2 sticky bottom-0 bg-background pb-1">
+      </div>
+
+      <div className="sticky bottom-0 bg-background pt-3 pb-1 flex gap-3">
         <Button onClick={onBook} className="flex-1">קבע אירוע באולם זה</Button>
         <Button variant="outline" onClick={onBack}>חזור לרשימה</Button>
       </div>

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogBody, DialogTitle } from "@/components/ui/dialog";
@@ -26,6 +26,11 @@ interface EventFormModalProps {
 export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }: EventFormModalProps) {
   const [loading, setLoading] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+  const eventTypeRef = useRef<HTMLButtonElement>(null);
+  const eventPurposeRef = useRef<HTMLButtonElement>(null);
+  const clientNameRef = useRef<HTMLInputElement>(null);
+  const clientPhoneRef = useRef<HTMLInputElement>(null);
+  const clientEmailRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     event_type: "" as EventType | "",
     event_purpose: "" as EventPurpose | "",
@@ -37,6 +42,13 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
     notes: "",
   });
 
+  useEffect(() => {
+    if (!open) {
+      setForm({ event_type: "", event_purpose: "", client_name: "", client_phone: "", client_email: "", price_listed: "", discount_amount: "0", notes: "" });
+      setPhoneError("");
+    }
+  }, [open]);
+
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
     if (field === "client_phone") setPhoneError("");
@@ -44,12 +56,29 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.event_type || !form.event_purpose) {
-      toast.error("יש לבחור סוג אירוע ומהות");
+    if (!form.event_type) {
+      toast.error("יש לבחור סוג אירוע");
+      eventTypeRef.current?.focus();
+      return;
+    }
+    if (!form.event_purpose) {
+      toast.error("יש לבחור מהות אירוע");
+      eventPurposeRef.current?.focus();
+      return;
+    }
+    if (!form.client_name.trim()) {
+      toast.error("יש להזין שם לקוח");
+      clientNameRef.current?.focus();
       return;
     }
     if (!isValidPhone(form.client_phone)) {
       setPhoneError("מספר טלפון לא תקין (לדוגמה: 052-1234567)");
+      clientPhoneRef.current?.focus();
+      return;
+    }
+    if (!form.client_email.trim()) {
+      toast.error("יש להזין כתובת מייל");
+      clientEmailRef.current?.focus();
       return;
     }
 
@@ -95,7 +124,7 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>הוספת אירוע — {formatDate(date)}</DialogTitle>
+          <DialogTitle>הוספת אירוע - {formatDate(date)}</DialogTitle>
         </DialogHeader>
         <DialogBody>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -103,7 +132,7 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
             <div className="space-y-1">
               <Label>סוג אירוע *</Label>
               <Select value={form.event_type} onValueChange={(v) => set("event_type", v)}>
-                <SelectTrigger dir="rtl"><SelectValue placeholder="בחר סוג" /></SelectTrigger>
+                <SelectTrigger ref={eventTypeRef} dir="rtl"><SelectValue placeholder="בחר" /></SelectTrigger>
                 <SelectContent dir="rtl">
                   {(Object.entries(EVENT_TYPE_LABELS) as [EventType, string][]).map(([v, l]) => (
                     <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -114,7 +143,7 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
             <div className="space-y-1">
               <Label>מהות האירוע *</Label>
               <Select value={form.event_purpose} onValueChange={(v) => set("event_purpose", v)}>
-                <SelectTrigger><SelectValue placeholder="בחר מהות" /></SelectTrigger>
+                <SelectTrigger ref={eventPurposeRef} dir="rtl"><SelectValue placeholder="בחר" /></SelectTrigger>
                 <SelectContent dir="rtl">
                   {(Object.entries(EVENT_PURPOSE_LABELS) as [EventPurpose, string][]).map(([v, l]) => (
                     <SelectItem key={v} value={v}>{l}</SelectItem>
@@ -127,16 +156,16 @@ export function EventFormModal({ open, onClose, date, venueId, userId, isAdmin }
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1 col-span-2">
               <Label>שם הלקוח *</Label>
-              <Input value={form.client_name} onChange={(e) => set("client_name", e.target.value)} required />
+              <Input ref={clientNameRef} value={form.client_name} onChange={(e) => set("client_name", e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label>טלפון *</Label>
-              <Input type="tel" dir="ltr" value={form.client_phone} onChange={(e) => set("client_phone", e.target.value)} className={phoneError ? "border-destructive" : ""} placeholder="052-1234567" />
+              <Input ref={clientPhoneRef} type="tel" dir="ltr" value={form.client_phone} onChange={(e) => set("client_phone", e.target.value)} className={phoneError ? "border-destructive" : ""} placeholder="052-1234567" />
               {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
             </div>
             <div className="space-y-1">
               <Label>מייל *</Label>
-              <Input type="email" dir="ltr" value={form.client_email} onChange={(e) => set("client_email", e.target.value)} required />
+              <Input ref={clientEmailRef} type="email" dir="ltr" value={form.client_email} onChange={(e) => set("client_email", e.target.value)} />
             </div>
           </div>
 

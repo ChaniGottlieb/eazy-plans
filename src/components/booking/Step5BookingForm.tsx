@@ -180,7 +180,8 @@ export function Step5BookingForm({ venue, date, eventType, isAdmin, userId, onBa
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="flex flex-col min-h-full">
+      <div className="flex-1 space-y-5">
         {/* Lock timer */}
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-800 flex justify-between items-center">
           <span>האולם שמור לך עוד</span>
@@ -250,8 +251,9 @@ export function Step5BookingForm({ venue, date, eventType, isAdmin, userId, onBa
           <Label>הערות</Label>
           <Textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
         </div>
+      </div>
 
-      <div className="flex gap-3">
+      <div className="sticky bottom-0 bg-background pt-3 pb-1 flex gap-3">
         <Button type="submit" disabled={loading || secondsLeft === 0} className="flex-1">
           {loading ? "שומר..." : "שמור"}
         </Button>
